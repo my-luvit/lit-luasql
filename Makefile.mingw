@@ -1,10 +1,14 @@
+CC = gcc
+V=2.8.0
+LUA_VER = 5.3
 LUA_INC = -I/usr/local/include
 LUA_LIB = -L/usr/local/lib 
+LUA_DIR = /usr/local/lib/lua/$(LUA_VER)/luasql
 DRIVER_INC = ./driver
 DRIVER_LIB = ./driver
+LUVI_RENAMED_LIB = ./luvi_renamed.lib
+LUVI_LIB = ./luvi.lib
 CFLAG = -Wall -O2 -shared
-CC = gcc
-LUA_DIR = /usr/local/lib/lua/5.3/luasql
 
 all:
 	echo "press mysql,sqlite,sqlite3,odbc"
@@ -14,13 +18,13 @@ sqlite3:src/sqlite3.dll
 odbc:src/odbc.dll
 
 src/mysql.dll:src/luasql.c src/ls_mysql.c
-	$(CC) $(CFLAG) $(LUA_INC) $(LUA_LIB) -I$(DRIVER_INC)/mysql/include  -L$(DRIVER_LIB)/mysql/lib/ -o $@ $^ -llua53 -lmysql
+	$(CC) $(CFLAG) $(LUA_INC) $(LUA_LIB) -I$(DRIVER_INC)/mysql/include  -L$(DRIVER_LIB)/mysql/lib/ -o $@ $^ -lmysql $(LUVI_RENAMED_LIB) $(LUVI_LIB) -DLUASQL_VERSION_NUMBER='"$V"'
 
 src/sqlite3.dll:src/luasql.c src/ls_sqlite3.c
-	$(CC) $(CFLAG) $(LUA_INC) $(LUA_LIB) -I$(DRIVER_INC)/sqlite3/include  -L$(DRIVER_LIB)/sqlite3/lib/ -o $@ $^  -lsqlite3 -llua53
+	$(CC) $(CFLAG) $(LUA_INC) $(LUA_LIB) -I$(DRIVER_INC)/sqlite3/include  -L$(DRIVER_LIB)/sqlite3/lib/ -o $@ $^  -lsqlite3 $(LUVI_RENAMED_LIB) $(LUVI_LIB) -DLUASQL_VERSION_NUMBER='"$V"'
 
 src/odbc.dll:src/luasql.c src/ls_odbc.c
-	$(CC) $(CFLAG) $(LUA_INC) $(LUA_LIB) -o $@ $^  -lodbc32 -llua53
+	$(CC) $(CFLAG) $(LUA_INC) $(LUA_LIB) -o $@ $^ -lodbc32 $(LUVI_RENAMED_LIB) $(LUVI_LIB) -DLUASQL_VERSION_NUMBER='"$V"'
 
 install:
 	-mkdir $(LUA_DIR)
@@ -29,6 +33,3 @@ uninstall:
 	-rm -rf $(LUA_DIR)
 clean:
 	-rm src/*.dll
-
-
-

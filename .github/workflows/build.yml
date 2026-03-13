@@ -1,0 +1,112 @@
+name: Build against Luvi
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build-windows:
+    name: Build ODBC driver for Windows_AMD64 against latest luajit Luvi
+    runs-on: windows-latest
+    steps:
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-lua51
+            make
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Fetch Luvi Windows libraries
+        shell: msys2 {0}
+        run: |
+          curl --retry 5 --retry-delay 5 -#Lfo "./luvi.lib" "https://github.com/my-luvit/luvi/releases/latest/download/luvi-Windows-amd64-luajit-regular.lib"
+          curl --retry 5 --retry-delay 5 -#Lfo "./luvi_renamed.lib" "https://github.com/my-luvit/luvi/releases/latest/download/luvi-Windows-amd64-luajit-regular_renamed.lib"
+
+      - name: Compile and build
+        shell: msys2 {0}
+        run: |
+          mkdir ./publish
+          make -f Makefile.mingw src/odbc.dll \
+            LUA_INC="-I/ucrt64/include/lua5.1 -I/ucrt64/include" \
+            LUA_LIB="-L/ucrt64/lib" \
+            CFLAG="-Wall -O2 -shared" \
+            LUA_VER="5.1"
+
+      - name: Rename Artifacts
+        run: |
+          mv src/odbc.dll ./publish/odbc-Windows-x86_64-luajit_luvi_renamed.dll
+
+      - name: Publish Artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          path: |
+            publish/*
+
+  build-linux:
+    name: Build ODBC driver for Linux_x86_64 against latest luajit Luvi
+    runs-on: ubuntu-latest
+    env:
+      UNIX_ODBC_VERSION: 2.3.14
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: luau-project/setup-lua@v1.0.9
+        with:
+          lua-version: luajit
+          luarocks-version: none
+
+      - name: Build and install unixODBC
+        run: |
+          cd "${{ runner.temp }}"
+          curl --retry 5 --retry-delay 5 -#Lfo "./unixODBC.tar.gz" "https://github.com/lurcher/unixODBC/releases/download/v${{ env.UNIX_ODBC_VERSION }}/unixODBC-${{ env.UNIX_ODBC_VERSION }}.tar.gz"
+          tar -C "${{ runner.temp }}" -xf "${{ runner.temp }}/unixODBC.tar.gz"
+          mkdir build-unixodbc
+          cd build-unixodbc
+          ../unixODBC-${{ env.UNIX_ODBC_VERSION }}/configure --prefix=/usr/local
+          make
+          sudo make install
+
+      - name: Build LuaSQL ODBC
+        run: |
+          mkdir ./publish
+          make odbc \
+            LUA_INC="${{ github.workspace }}/.lua/include/luajit-2.1"
+
+      - name: Rename Artifacts
+        run: |
+          mv src/odbc.so publish/odbc-Linux-x86_64-luajit.so
+
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: odbc-Linux-x86_64-luajit.so
+          path: |
+            publish/*
+
+  release:
+    name: Release build
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: download
+          merge-multiple: true
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: download/*
