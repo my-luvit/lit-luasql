@@ -1,6 +1,6 @@
 return {
-  name = "Bilal2453/luasql-odbc",
-  version = "2.8.0-6",
+  name = "my-luvit/luasql-odbc",
+  version = "2.8.1-0",
   description = "LuaSQL is a simple interface from Lua to a DBMS. This build includes ODBC driver only.",
   tags = {},
   license = "MIT",
