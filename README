@@ -12,3 +12,6 @@ LuaSQL is free software and uses the same license as Lua 5.1.
 
 Source code for LuaSQL can be downloaded from its GitHub repository.
 
+### Differences from upstream
+
+The ODBC driver has been changed here to use `SQL_WVARCHAR` for `execute` instead of `SQL_CHAR`, while this is technically a breaking change it was necessary for us since we are working with UTF-8 data, and the database backend relies heavily on variable data.

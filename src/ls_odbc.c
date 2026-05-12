@@ -789,7 +789,7 @@ static int set_param(lua_State *L, stmt_data *stmt, int i, param_data *data)
 			lua_pop(L, 1);
 
 			if(error(SQLBindParameter(stmt->hstmt, i, SQL_PARAM_INPUT, SQL_C_CHAR,
-			                          SQL_CHAR, len, 0, data->buf, data->len,
+			                          SQL_WVARCHAR, len, 0, data->buf, data->len,
 			                          &data->type))) {
 				return fail(L, hSTMT, stmt->hstmt);
 			}

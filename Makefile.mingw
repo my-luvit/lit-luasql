@@ -1,5 +1,5 @@
 CC = gcc
-V=2.8.0
+V=2.8.1
 LUA_VER = 5.3
 LUA_INC = -I/usr/local/include
 LUA_LIB = -L/usr/local/lib 
